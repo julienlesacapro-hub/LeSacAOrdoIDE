@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6b5c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LeSacAOrdo IDE — Prescriptions infirmières</title>
+<meta name="description" content="LeSacAOrdo IDE — prescriptions infirmières et courriers, avec gestion du remplacement.">
+<meta name="author" content="LESACA Julien">
+<meta name="copyright" content="© 2026 LESACA Julien — Tous droits réservés">
+<meta name="application-name" content="LeSacAOrdo IDE">
+<meta name="apple-mobile-web-app-title" content="LeSacAOrdo IDE">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<style>
+/* ============================================================
+   1. INTERFACE — mobile d'abord
+   ============================================================ */
+:root{
+  --bg:#eef3f2; --panel:#fff; --line:#c8d6d3; --text:#1b2826;
+  --muted:#5a6d69; --accent:#0f6b5c; --soft:#e3f1ee; --warn:#a5341f; --ok:#1d6b2f;
+  --barre:56px; --safe:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:rgba(15,107,92,.12)}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.4}
+
+#top{position:sticky;top:0;z-index:30;background:var(--accent);color:#fff;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}
+#top h1{font-size:14px;margin:0 0 9px;font-weight:600;display:flex;align-items:center;gap:8px}
+#top h1 span{opacity:.85;font-weight:400;font-size:11.5px}
+#top h1 .logo{width:30px;height:30px;border-radius:7px;flex:0 0 auto;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+#top h1 b{font-size:16px;font-weight:700;letter-spacing:.2px}
+#modes{display:flex;background:rgba(255,255,255,.16);border-radius:8px;padding:3px;gap:3px}
+#modes button{flex:1;border:none;background:transparent;color:#fff;font:inherit;font-size:13px;font-weight:600;padding:9px 4px;border-radius:6px;cursor:pointer}
+#modes button.on{background:#fff;color:var(--accent)}
+#copyright{margin:0;padding:16px 14px 6px;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.5}
+
+#wrap{display:block}
+#formPane{padding:0 0 calc(var(--barre) + var(--safe) + 24px)}
+#previewPane{display:none;background:#56625f;padding:14px 10px calc(var(--barre) + var(--safe) + 24px)}
+body.vue-apercu #formPane{display:none}
+body.vue-apercu #previewPane{display:block}
+
+fieldset{border:none;border-top:1px solid var(--line);margin:0;padding:14px 14px 18px;background:var(--panel)}
+fieldset.off{display:none}
+body.mode-ordo .lettre{display:none}
+body.mode-lettre .ordo{display:none}
+legend{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--accent);padding:0;margin:0 0 2px}
+label{display:block;font-size:12px;color:var(--muted);margin:11px 0 4px;font-weight:500}
+input[type=text],input[type=tel],input[type=email],input[type=number],select,textarea{
+  width:100%;padding:10px;border:1px solid var(--line);border-radius:7px;font-family:inherit;font-size:16px;background:#fff;color:var(--text)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 20px,calc(100% - 11px) 20px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--soft);border-color:var(--accent)}
+textarea{resize:vertical;min-height:76px;line-height:1.45}
+.row{display:flex;gap:9px}
+.row>div{flex:1;min-width:0}
+.check{display:flex;align-items:flex-start;gap:10px;margin:9px 0;font-size:14px;cursor:pointer;line-height:1.35}
+.check input{margin:1px 0 0;flex:0 0 auto;width:20px;height:20px;accent-color:var(--accent)}
+.check span{flex:1}
+.presc{display:flex;align-items:flex-start;gap:8px;margin:8px 0}
+.presc input[type=checkbox]{flex:0 0 auto;width:20px;height:20px;margin-top:11px;accent-color:var(--accent)}
+.presc textarea{flex:1;min-height:44px;font-size:15px;padding:9px}
+button{font-family:inherit;font-size:15px;font-weight:600;padding:11px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.ghost{background:var(--soft);border-color:#bcdcd5;color:var(--accent);font-size:13px;padding:8px 11px}
+button.danger{color:var(--warn);font-size:13px;padding:8px 11px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:7px 0 0}
+.chips button{font-size:12.5px;padding:7px 10px;border-radius:14px;background:var(--soft);border:1px solid #bcdcd5;color:var(--accent);font-weight:600}
+.chipsTitre{font-size:11px;color:var(--muted);margin:10px 0 0;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.mic{width:44px;height:44px;padding:0;border-radius:8px;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;background:#fff;flex:0 0 auto}
+.mic.on{background:var(--warn);border-color:var(--warn);color:#fff;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{opacity:.55}}
+.avecmic{display:flex;gap:8px;align-items:flex-start}
+.avecmic textarea,.avecmic input{flex:1}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.5;margin:9px 0 0;padding:10px 12px;background:var(--soft);border-radius:7px}
+.hint.alerte{background:#fdeee9;color:#7a2716}
+.hint.bon{background:#e6f4e9;color:var(--ok)}
+.hint ul{margin:4px 0 0;padding-left:18px}
+.sub{margin:10px 0 0}
+.sub.off{display:none}
+.bloc{border:1px solid var(--line);border-radius:8px;padding:12px 12px 14px;margin-top:12px;background:#fbfdfc}
+.titrebloc{margin:0;font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px}
+details.profil>summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--accent);padding:4px 0}
+.resume{font-size:13px;color:var(--muted);margin:4px 0 0}
+
+/* signature */
+.sigApercu{margin-top:8px;border:1px dashed var(--line);border-radius:8px;min-height:90px;display:flex;align-items:center;justify-content:center;background:#fff;padding:6px}
+.sigApercu img{max-width:100%;max-height:120px}
+.sigApercu .vide{font-size:12.5px;color:var(--muted)}
+#pad{display:none;position:fixed;inset:0;z-index:70;background:rgba(10,24,22,.65);align-items:center;justify-content:center;padding:10px}
+#pad.on{display:flex}
+#pad .boite{background:#fff;border-radius:12px;padding:14px;width:100%;max-width:640px}
+#pad h3{margin:0 0 6px;font-size:15px;color:var(--accent)}
+#pad canvas{width:100%;height:220px;border:1px solid var(--line);border-radius:8px;touch-action:none;background:#fff;display:block}
+
+/* date */
+.datebloc{display:flex;gap:8px;align-items:center}
+.datebloc input[type=text]{flex:1;min-width:0}
+.datepick{position:relative;flex:0 0 auto;width:44px;height:44px}
+.datepick button{width:44px;height:44px;padding:0;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center}
+.datepick input[type=date]{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;padding:0;margin:0;background:none}
+
+#barre{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:8px;padding:8px 10px calc(8px + var(--safe));
+  background:#fff;border-top:1px solid var(--line);box-shadow:0 -3px 14px rgba(0,0,0,.08)}
+#barre button{flex:1;font-size:14px;padding:12px 6px}
+#barre .compteur{font-size:11px;font-weight:400;opacity:.8;display:block}
+
+.pagebox{overflow:hidden;margin:0 auto 16px;position:relative}
+.pagelabel{font-size:11px;color:#e2e8e6;margin:0 0 5px}
+.debord{font-size:11px;color:#ffd166;font-weight:700;margin:0 0 5px}
+.pagewrap{transform-origin:top left}
+
+@media (min-width:900px){
+  #wrap{display:flex;height:calc(100vh - 84px)}
+  #formPane{width:440px;flex:0 0 440px;overflow-y:auto;height:100%;padding-bottom:40px}
+  #previewPane{display:block !important;flex:1;overflow-y:auto;height:100%;padding:18px}
+  body.vue-apercu #formPane{display:block}
+  #barre{position:static;box-shadow:none}
+}
+
+/* ============================================================
+   2. LE DOCUMENT — A4, marges 15 mm, Times 10 pt
+   ============================================================ */
+.page{width:210mm;height:296.6mm;background:#fff;overflow:hidden;display:flex;flex-direction:column;
+  padding:12mm 15mm 10mm;font-family:"Times New Roman","Liberation Serif",Times,serif;font-size:10pt;line-height:1.22;color:#000;
+  box-shadow:0 3px 14px rgba(0,0,0,.35)}
+:where(.page) p{margin:0}
+.pg-head{flex:0 0 auto;display:flex;gap:6mm;padding-bottom:3mm;border-bottom:.75pt solid #0f6b5c}
+.pg-head .g{flex:1;min-width:0}
+.pg-head .d{width:62mm;text-align:right}
+.pg-nom{font-weight:bold;font-size:11.5pt}
+.pg-qual{font-style:italic}
+.pg-small{font-size:9pt}
+.pg-barre{text-decoration:line-through}
+.pg-rempl{margin-top:1.6mm !important;font-size:9.5pt}
+.pg-rempl .t{font-weight:bold}
+.pg-body{flex:1 1 auto;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.pg-foot{flex:0 0 auto;border-top:.5pt solid #9bb;padding-top:1.6mm;text-align:center;font-size:8pt;color:#333}
+.pg-date{text-align:right;margin-top:5mm !important}
+.pg-title{text-align:center;font-weight:bold;letter-spacing:.6pt;font-size:12.5pt;margin-top:6mm !important}
+.pg-soustitre{text-align:center;font-style:italic;font-size:9pt;margin-top:1mm !important}
+.pg-ident{margin-top:6mm !important}
+.pg-line{margin-top:1.2mm !important}
+.pg-rule{border:none;border-top:.5pt solid #000;margin:3mm 0 0}
+.pg-para{margin-top:3.6mm !important}
+.pg-para.first{margin-top:6mm !important}
+.pg-tiret{margin-top:2.6mm !important;margin-left:5mm;text-indent:-3mm}
+.pg-i{font-style:italic}
+.pg-b{font-weight:bold}
+.pg-dest{margin:8mm 0 0 95mm !important;white-space:pre-line}
+.pg-objet{margin-top:9mm !important}
+.pg-intro{margin-top:7mm !important}
+.pg-sig{margin-top:auto;padding-top:4mm}
+.pg-sig .close{margin-top:2.4mm !important}
+.pg-sigbloc{margin:5mm 0 0 auto;width:88mm;text-align:center}
+.pg-sigbloc img{display:block;margin:1.5mm auto 0;max-width:62mm;max-height:28mm;object-fit:contain}
+.pg-sigbloc .espace{height:24mm}
+.pg-sigbloc .lab{font-size:8.5pt;font-style:italic}
+.pg-suite{margin-top:3mm !important;text-align:right;font-style:italic}
+
+#measure{position:absolute;visibility:hidden;left:-9999px;top:0;width:180mm;overflow:hidden;display:flow-root;
+  font-family:"Times New Roman","Liberation Serif",Times,serif;font-size:10pt;line-height:1.22}
+#measure .page{box-shadow:none}
+
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{height:auto;background:#fff}
+  #top,#formPane,#barre,.pagelabel,.debord,#dial,#pad,#maj{display:none !important}
+  #wrap{display:block;height:auto}
+  #previewPane{display:block !important;height:auto;overflow:visible;padding:0;background:#fff;width:auto;flex:none}
+  .pagebox{overflow:visible;height:auto !important;margin:0;width:auto !important}
+  .pagewrap{transform:none !important}
+  .page{box-shadow:none;margin:0;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pagebox:last-child .page{break-after:auto;page-break-after:auto}
+}
+
+#maj{display:none;align-items:center;gap:10px;padding:10px 14px;background:#ffd166;color:#3a2c00;font-size:13px;font-weight:600}
+#maj.on{display:flex}
+#maj span{flex:1}
+#maj button{padding:7px 12px;font-size:13px;background:#3a2c00;color:#fff;border-color:#3a2c00}
+#btnInstall{display:none;width:100%;margin-top:10px}
+
+#dial{display:none;position:fixed;inset:0;z-index:60;background:rgba(12,26,24,.6);align-items:flex-end;justify-content:center}
+#dial.on{display:flex}
+#dial .boite{background:#fff;border-radius:14px 14px 0 0;width:100%;max-width:520px;padding:20px 18px calc(18px + var(--safe))}
+#dial h3{margin:0 0 3px;font-size:16px;color:var(--accent)}
+#dial p{margin:0 0 14px;font-size:13px;color:var(--muted)}
+#dial li{font-size:13.5px;line-height:1.5;margin:0 0 8px}
+#dial ul{margin:0 0 16px;padding-left:20px}
+#dial .actions{display:flex;gap:9px}
+#dial .actions button{flex:1}
+#dial .etat{margin:10px 0 12px;min-height:1em;font-size:13px;color:var(--text)}
+#dial .etat:empty{display:none}
+#dial details{margin-top:4px;border-top:1px solid var(--line);padding-top:10px}
+#dial summary{font-size:13px;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:10px}
+#dial b#dialNom{word-break:break-all;color:var(--text)}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <h1><img class="logo" src="./icon-192.png" alt=""><b>LeSacAOrdo IDE</b> <span>Prescriptions infirmières &amp; courriers</span></h1>
+  <div id="modes">
+    <button type="button" data-mode="ordo" class="on">Ordonnances</button>
+    <button type="button" data-mode="lettre">Courrier</button>
+  </div>
+</div>
+
+<div id="maj"><span>Une nouvelle version est disponible.</span><button type="button" id="btnMaj">Mettre à jour</button></div>
+
+<div id="wrap">
+<div id="formPane">
+
+  <!-- ======================= PROFIL ======================= -->
+  <fieldset>
+    <legend>Infirmier(ère) prescripteur</legend>
+    <details class="profil" id="profilBox">
+      <summary>Mon identité, mon cabinet, ma signature</summary>
+      <div class="row">
+        <div style="flex:0 0 96px"><label>Civilité</label>
+          <select id="pCiv"><option value="Mme">Mme</option><option value="M.">M.</option></select></div>
+        <div><label>NOM</label><input type="text" id="pNom" autocomplete="off" autocapitalize="characters"></div>
+      </div>
+      <label>Prénom</label><input type="text" id="pPrenom" autocomplete="off" autocapitalize="words">
+      <label>Numéro RPPS (11 chiffres)</label>
+      <input type="text" id="pRpps" inputmode="numeric" maxlength="11" autocomplete="off">
+      <p class="hint alerte" id="noteRpps" style="display:none"></p>
+      <label>Titre / qualité imprimée</label>
+      <input type="text" id="pQualite" autocomplete="off">
+      <label>N° Assurance Maladie (identifiant de facturation, facultatif)</label>
+      <input type="text" id="pAM" inputmode="numeric" maxlength="9" autocomplete="off" placeholder="9 chiffres">
+      <label>Adresse professionnelle</label>
+      <textarea id="pAdresse" rows="2" placeholder="12 rue des Lilas&#10;83000 TOULON"></textarea>
+      <div class="row">
+        <div><label>Téléphone</label><input type="tel" id="pTel" autocomplete="off"></div>
+        <div><label>Courriel</label><input type="email" id="pMail" autocomplete="off"></div>
+      </div>
+      <label>Ville imprimée avant la date (« Toulon, le … »)</label>
+      <input type="text" id="pVille" autocomplete="off">
+
+      <div class="bloc">
+        <p class="titrebloc">Signature</p>
+        <div class="sigApercu" id="sigApercu"><span class="vide">Aucune signature enregistrée</span></div>
+        <div class="btns">
+          <button type="button" class="ghost" id="sigDessiner">Dessiner</button>
+          <button type="button" class="ghost" id="sigImporter">Importer une photo</button>
+          <button type="button" class="danger" id="sigSuppr">Supprimer</button>
+          <input type="file" id="sigFichier" accept="image/*" style="display:none">
+        </div>
+        <label class="check"><input type="checkbox" id="sigBlanc" checked><span>À l'import, rendre le fond blanc transparent</span></label>
+        <label class="check"><input type="checkbox" id="sigApposer" checked><span>Apposer la signature sur les documents</span></label>
+        <p class="hint">La signature reste sur cet appareil (stockage du navigateur) : elle n'est envoyée nulle part. Toute personne ayant accès à l'appareil peut l'apposer : verrouillez votre téléphone.</p>
+      </div>
+      <div class="btns"><button type="button" class="danger" id="profilEffacer">Effacer mon profil de cet appareil</button></div>
+    </details>
+    <p class="resume" id="profilResume"></p>
+  </fieldset>
+
+  <!-- ======================= REMPLACEMENT ======================= -->
+  <fieldset>
+    <legend>Remplacement</legend>
+    <label class="check"><input type="checkbox" id="rActif"><span>J'exerce en remplacement d'un(e) infirmier(ère) libéral(e)</span></label>
+    <div id="rBox" class="sub off">
+      <p class="hint">L'ordonnance identifie le cabinet du titulaire <b>et</b> vous, qui prescrivez et signez : votre nom, la mention « remplaçant(e) », votre RPPS. Le RPPS et le n° Assurance Maladie du titulaire sont imprimés à part et étiquetés, pour qu'aucune confusion ne soit possible sur l'auteur de la prescription.</p>
+      <div class="row">
+        <div style="flex:0 0 96px"><label>Civilité</label>
+          <select id="rCiv"><option value="Mme">Mme</option><option value="M.">M.</option></select></div>
+        <div><label>NOM du titulaire</label><input type="text" id="rNom" autocomplete="off" autocapitalize="characters"></div>
+      </div>
+      <label>Prénom du titulaire</label><input type="text" id="rPrenom" autocomplete="off" autocapitalize="words">
+      <div class="row">
+        <div><label>RPPS du titulaire</label><input type="text" id="rRpps" inputmode="numeric" maxlength="11" autocomplete="off"></div>
+        <div><label>N° Assurance Maladie du titulaire</label><input type="text" id="rAM" inputmode="numeric" maxlength="9" autocomplete="off"></div>
+      </div>
+      <p class="hint alerte" id="noteRRpps" style="display:none"></p>
+      <label>Adresse du cabinet du titulaire</label>
+      <textarea id="rAdresse" rows="2"></textarea>
+      <div class="row">
+        <div><label>Téléphone du cabinet</label><input type="tel" id="rTel" autocomplete="off"></div>
+        <div><label>Courriel du cabinet</label><input type="email" id="rMail" autocomplete="off"></div>
+      </div>
+      <div class="row">
+        <div><label>Remplacement du</label>
+          <div class="datebloc"><input type="text" id="rDebut" inputmode="numeric" maxlength="10" placeholder="JJ/MM/AAAA" autocomplete="off">
+          <span class="datepick"><button type="button" tabindex="-1">&#128197;</button><input type="date" id="rDebutPick" aria-label="Début du remplacement"></span></div></div>
+        <div><label>au</label>
+          <div class="datebloc"><input type="text" id="rFin" inputmode="numeric" maxlength="10" placeholder="JJ/MM/AAAA" autocomplete="off">
+          <span class="datepick"><button type="button" tabindex="-1">&#128197;</button><input type="date" id="rFinPick" aria-label="Fin du remplacement"></span></div></div>
+      </div>
+      <label>Présentation de l'en-tête</label>
+      <select id="rStyle">
+        <option value="explicite">Mentions explicites : « remplaçant(e) de … »</option>
+        <option value="barre">Nom du titulaire barré, mon nom à côté (usage des ordonnances pré-imprimées)</option>
+      </select>
+      <p class="hint alerte" id="notePeriode" style="display:none"></p>
+    </div>
+  </fieldset>
+
+  <!-- ======================= PATIENT ======================= -->
+  <fieldset>
+    <legend>Patient</legend>
+    <div class="row">
+      <div><label>Civilité</label>
+        <select id="civilite"><option value="Mme">Mme</option><option value="M.">M.</option></select></div>
+      <div><label>Date de naissance</label>
+        <div class="datebloc">
+          <input type="text" id="ddn" inputmode="numeric" maxlength="10" placeholder="JJ/MM/AAAA" autocomplete="off">
+          <span class="datepick"><button type="button" tabindex="-1">&#128197;</button><input type="date" id="ddnPick" aria-label="Date de naissance"></span>
+        </div>
+      </div>
+    </div>
+    <p class="hint alerte" id="noteDdn" style="display:none">Date incomplète ou inexistante : elle n'apparaîtra pas sur le document.</p>
+    <div class="row">
+      <div><label>NOM</label><input type="text" id="nom" autocomplete="off" autocapitalize="characters"></div>
+      <div><label>Prénom</label><input type="text" id="prenom" autocomplete="off" autocapitalize="words"></div>
+    </div>
+    <div class="row ordo">
+      <div><label>Taille (si nécessaire)</label><input type="text" id="taille" autocomplete="off" placeholder="ex. 112 cm"></div>
+      <div><label>Poids (si nécessaire)</label><input type="text" id="poids" autocomplete="off" placeholder="ex. 19 kg"></div>
+    </div>
+    <label>Date du document</label>
+    <div class="datebloc">
+      <input type="text" id="dateDoc" inputmode="numeric" maxlength="10" placeholder="JJ/MM/AAAA" autocomplete="off">
+      <span class="datepick"><button type="button" tabindex="-1">&#128197;</button><input type="date" id="dateDocPick" aria-label="Date du document"></span>
+    </div>
+  </fieldset>
+
+  <!-- ======================= ORDONNANCES ======================= -->
+  <fieldset class="ordo">
+    <legend>Ordonnances à produire</legend>
+    <label class="check"><input type="checkbox" id="d_prod" checked><span>Produits de santé : pansements, dispositifs médicaux, substituts nicotiniques…</span></label>
+    <label class="check"><input type="checkbox" id="d_vacc"><span>Vaccination</span></label>
+    <label class="check"><input type="checkbox" id="d_bio"><span>Examens de biologie</span></label>
+    <p class="hint">Chaque catégorie donne une ordonnance distincte : la pharmacie et le laboratoire reçoivent chacun la leur. Ne prescrivez que ce qui figure dans la liste réglementaire en vigueur (arrêté du 26 juin 2026, JO du 27 juin 2026). Les modèles ci-dessous sont des trames de rédaction, pas une liste d'autorisations.</p>
+  </fieldset>
+
+  <fieldset id="fsProd" class="ordo">
+    <legend>Produits de santé</legend>
+    <div id="prodList"></div>
+    <div class="btns"><button type="button" class="ghost" id="addProd">+ Ligne vide</button></div>
+    <div id="prodModeles"></div>
+
+    <div class="bloc">
+      <p class="titrebloc">Composer une ligne de pansement</p>
+      <label>Type de pansement</label><select id="cpType"></select>
+      <div class="row">
+        <div><label>Dimensions</label><input type="text" id="cpDim" autocomplete="off" placeholder="10 × 10 cm"></div>
+        <div><label>Localisation</label><input type="text" id="cpLoc" autocomplete="off" placeholder="talon droit"></div>
+      </div>
+      <div class="row">
+        <div><label>Renouveler tous les … jours</label><input type="text" id="cpFreq" autocomplete="off" placeholder="xx"></div>
+        <div><label>Durée (jours)</label><input type="text" id="cpDuree" autocomplete="off" placeholder="xx"></div>
+      </div>
+      <label>Quantité (si précisée)</label><input type="text" id="cpQte" autocomplete="off" placeholder="ex. 1 boîte de 10">
+      <div class="btns"><button type="button" class="primary" id="cpAjouter" style="flex:1">Ajouter à l'ordonnance</button></div>
+    </div>
+
+    <label>Renouvellement</label>
+    <select id="prodRenouv">
+      <option value="">— non renouvelable / non précisé —</option>
+      <option value="À renouveler une fois.">À renouveler une fois</option>
+      <option value="À renouveler deux fois.">À renouveler deux fois</option>
+      <option value="À renouveler trois fois.">À renouveler trois fois</option>
+    </select>
+    <label>Mention complémentaire</label>
+    <div class="avecmic"><input type="text" id="prodMention" autocomplete="off"><button type="button" class="mic" data-cible="prodMention">&#127897;</button></div>
+  </fieldset>
+
+  <fieldset id="fsVacc" class="ordo">
+    <legend>Vaccination</legend>
+    <div id="vaccList"></div>
+    <div class="btns"><button type="button" class="ghost" id="addVacc">+ Ligne vide</button></div>
+    <div class="chips" id="vaccModeles"></div>
+    <p class="hint">La prescription vaccinale infirmière obéit à des conditions propres (âges, vaccins concernés, déclaration d'activité, formation) fixées par l'annexe de l'arrêté : vérifiez-les avant de prescrire.</p>
+    <label class="check"><input type="checkbox" id="vaccAdmin" checked><span>« Vaccin administré par l'infirmier(ère) »</span></label>
+    <label>Mention complémentaire</label>
+    <div class="avecmic"><input type="text" id="vaccMention" autocomplete="off"><button type="button" class="mic" data-cible="vaccMention">&#127897;</button></div>
+  </fieldset>
+
+  <fieldset id="fsBio" class="ordo">
+    <legend>Examens de biologie</legend>
+    <div id="bioList"></div>
+    <div class="btns"><button type="button" class="ghost" id="addBio">+ Ligne libre</button></div>
+    <label class="check"><input type="checkbox" id="bioDomicile"><span>Prélèvement à domicile</span></label>
+    <label class="check"><input type="checkbox" id="bioJeun"><span>À jeun</span></label>
+    <label>Renseignements cliniques / destinataire des résultats</label>
+    <div class="avecmic"><textarea id="bioIndication" rows="2" placeholder="Résultats à adresser à l'infirmier(ère) prescripteur et au médecin traitant."></textarea>
+      <button type="button" class="mic" data-cible="bioIndication">&#127897;</button></div>
+  </fieldset>
+
+  <!-- ======================= COURRIER ======================= -->
+  <fieldset class="lettre">
+    <legend>Destinataire</legend>
+    <label>Nom et adresse (une ligne par ligne d'adresse)</label>
+    <div class="avecmic">
+      <textarea id="destinataire" rows="3" placeholder="Docteur Jean DUPONT&#10;Médecin généraliste&#10;5 avenue de la République — 83000 TOULON"></textarea>
+      <button type="button" class="mic" data-cible="destinataire">&#127897;</button>
+    </div>
+    <label>Formule d'appel</label>
+    <select id="intro">
+      <option>Madame, Monsieur,</option>
+      <option>Docteur,</option>
+      <option>Madame,</option>
+      <option>Monsieur,</option>
+      <option>Chère consœur,</option>
+      <option>Cher confrère,</option>
+      <option>Chère consœur, cher confrère,</option>
+    </select>
+    <label>Objet (facultatif)</label>
+    <input type="text" id="objet" autocomplete="off" placeholder="ex. Suivi de plaie de M. X">
+  </fieldset>
+
+  <fieldset class="lettre">
+    <legend>Corps du courrier</legend>
+    <label>Modèles — remplissent le texte ci-dessous</label>
+    <div class="chips" id="lettreModeles"></div>
+    <div class="avecmic" style="margin-top:10px">
+      <textarea id="lettreCorps" rows="12" placeholder="Un paragraphe par ligne. La pagination est automatique."></textarea>
+      <button type="button" class="mic" data-cible="lettreCorps">&#127897;</button>
+    </div>
+    <div class="btns"><button type="button" class="ghost" id="insererIdent">Insérer l'identité du patient</button></div>
+    <label>Formule de politesse</label>
+    <select id="politesseChoix"></select>
+    <input type="text" id="politesse" autocomplete="off" style="margin-top:8px">
+  </fieldset>
+
+  <!-- ======================= CONFORMITÉ ======================= -->
+  <fieldset>
+    <legend>Contrôle des mentions</legend>
+    <div id="conformite" class="hint"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Dictée vocale</legend>
+    <p class="hint" id="micEtat">Vérification…</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Application</legend>
+    <p class="hint" id="appEtat">Vérification…</p>
+    <button type="button" class="primary" id="btnInstall">Installer l'application</button>
+  </fieldset>
+
+  <p id="copyright">LeSacAOrdo IDE — © 2026 LESACA Julien — Tous droits réservés<span id="versionApp"></span></p>
+</div><!-- /formPane -->
+
+<div id="previewPane"><div id="preview"></div></div>
+</div><!-- /wrap -->
+
+<div id="measure"></div>
+
+<div id="barre">
+  <button type="button" id="btnVue">Aperçu<span class="compteur" id="cptPages"></span></button>
+  <button type="button" id="btnReset">Effacer</button>
+  <button type="button" class="primary" id="btnPdf">PDF</button>
+</div>
+
+<div id="pad">
+  <div class="boite">
+    <h3>Signez dans le cadre</h3>
+    <canvas id="padCanvas"></canvas>
+    <div class="btns">
+      <button type="button" id="padEffacer">Recommencer</button>
+      <button type="button" id="padAnnuler">Annuler</button>
+      <button type="button" class="primary" id="padValider">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="dial">
+  <div class="boite">
+    <h3>Enregistrer le PDF</h3>
+    <p>Nom du fichier : <b id="dialNom"></b></p>
+    <div class="actions">
+      <button type="button" id="dialAnnuler">Annuler</button>
+      <button type="button" class="primary" id="dialPdf">Enregistrer le PDF</button>
+    </div>
+    <p id="dialEtat" class="etat"></p>
+    <div class="actions" id="dialPartageBloc" style="display:none;margin-bottom:9px">
+      <button type="button" id="dialPartager">Partager le PDF…</button>
+    </div>
+    <details id="dialImpr">
+      <summary>Imprimer</summary>
+      <ul>
+        <li>Format : <b>A4</b> — Marges : <b>Aucune</b></li>
+        <li>Options : cocher <b>Graphiques d'arrière-plan</b></li>
+      </ul>
+      <div class="actions"><button type="button" id="dialOk">Ouvrir l'impression</button></div>
+    </details>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   OUTILS
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const txt = s => esc(s).replace(/'/g,'’');
+const val = id => (($(id).value)||'').trim();
+
+function todayFr(){
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function frDepuisIso(iso){ const p = String(iso||'').split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : ''; }
+function isoDepuisFr(fr){
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(fr||'').trim());
+  if(!m) return '';
+  const j = +m[1], mo = +m[2], a = +m[3];
+  if(mo<1 || mo>12 || j<1 || j>31) return '';
+  const d = new Date(a, mo-1, j);
+  if(d.getDate()!==j || d.getMonth()!==mo-1) return '';
+  return m[3]+'-'+m[2]+'-'+m[1];
+}
+function masquerDate(el){
+  const avant = el.value.slice(0, el.selectionStart||0).replace(/\D/g,'').length;
+  const ch = el.value.replace(/\D/g,'').slice(0,8);
+  let v = ch;
+  if(ch.length>4) v = ch.slice(0,2)+'/'+ch.slice(2,4)+'/'+ch.slice(4);
+  else if(ch.length>2) v = ch.slice(0,2)+'/'+ch.slice(2);
+  if(v===el.value) return;
+  el.value = v;
+  const pos = avant + (avant>4?2:(avant>2?1:0));
+  try{ el.setSelectionRange(pos,pos); }catch(e){}
+}
+function ageAu(iso, refIso){
+  if(!iso) return null;
+  const n = new Date(iso), t = refIso ? new Date(refIso) : new Date();
+  if(isNaN(n) || isNaN(t)) return null;
+  let a = t.getFullYear()-n.getFullYear();
+  const m = t.getMonth()-n.getMonth();
+  if(m<0 || (m===0 && t.getDate()<n.getDate())) a--;
+  return (a>=0 && a<130) ? a : null;
+}
+function lignesDe(s){ return String(s||'').split(/\n/).map(x=>x.trim()).filter(Boolean); }
+function formatNom(v){ return String(v||'').toLocaleUpperCase('fr-FR'); }
+function formatPrenom(v){
+  return String(v||'').toLocaleLowerCase('fr-FR').replace(/(^|[\s'’-])(\p{L})/gu,(m,s,c)=>s+c.toLocaleUpperCase('fr-FR'));
+}
+/* Le numéro RPPS comporte 11 chiffres dont le dernier est une clé de Luhn.
+   Contrôle indicatif : un numéro refusé n'est jamais bloqué, seulement signalé. */
+function luhn(s){
+  let t=0;
+  for(let i=0;i<s.length;i++){ let d=+s[s.length-1-i]; if(i%2){ d*=2; if(d>9) d-=9; } t+=d; }
+  return t%10===0;
+}
+function etatRpps(s){
+  if(!s) return 'vide';
+  if(!/^\d{11}$/.test(s)) return 'format';
+  return luhn(s) ? 'ok' : 'cle';
+}
+function messageRpps(s, qui){
+  const e = etatRpps(s);
+  if(e==='format') return 'Le RPPS '+qui+' doit comporter exactement 11 chiffres.';
+  if(e==='cle') return 'Le RPPS '+qui+' ne passe pas le contrôle de clé (Luhn) : vérifiez une faute de frappe. Il est tout de même imprimé tel quel.';
+  return '';
+}
+
+/* =====================================================================
+   PROFIL ET SIGNATURE — conservés sur l'appareil uniquement
+   ===================================================================== */
+const CLE_PROFIL = 'lesacaordoide-profil';
+const CLE_SIGN = 'lesacaordoide-signature';
+const CLE_REMPL = 'lesacaordoide-remplacement';
+const CHAMPS_PROFIL = ['pCiv','pNom','pPrenom','pRpps','pQualite','pAM','pAdresse','pTel','pMail','pVille'];
+const CHAMPS_REMPL = ['rCiv','rNom','rPrenom','rRpps','rAM','rAdresse','rTel','rMail','rDebut','rFin','rStyle'];
+let SIGNATURE = '';
+
+function lireStock(cle){ try{ return JSON.parse(localStorage.getItem(cle)||'null'); }catch(e){ return null; } }
+function ecrireStock(cle, v){
+  try{ localStorage.setItem(cle, typeof v==='string' ? v : JSON.stringify(v)); return true; }
+  catch(e){ return false; }
+}
+function sauverProfil(){
+  const p = {}; CHAMPS_PROFIL.forEach(id=>p[id]=$(id).value);
+  p.sigApposer = $('sigApposer').checked;
+  ecrireStock(CLE_PROFIL, p);
+  const r = {actif:$('rActif').checked}; CHAMPS_REMPL.forEach(id=>r[id]=$(id).value);
+  ecrireStock(CLE_REMPL, r);
+}
+function chargerProfil(){
+  const p = lireStock(CLE_PROFIL) || {};
+  CHAMPS_PROFIL.forEach(id=>{ if(typeof p[id]==='string') $(id).value = p[id]; });
+  if(typeof p.sigApposer==='boolean') $('sigApposer').checked = p.sigApposer;
+  const r = lireStock(CLE_REMPL) || {};
+  CHAMPS_REMPL.forEach(id=>{ if(typeof r[id]==='string') $(id).value = r[id]; });
+  $('rActif').checked = !!r.actif;
+  ['rDebut','rFin'].forEach(id=>$(id+'Pick').value = isoDepuisFr($(id).value));
+  try{ SIGNATURE = localStorage.getItem(CLE_SIGN) || ''; }catch(e){ SIGNATURE = ''; }
+  if(!val('pQualite')) $('pQualite').value = qualiteDefaut($('pCiv').value);
+  if(!val('pNom')) $('profilBox').open = true;
+  afficherSignature();
+}
+function qualiteDefaut(civ){ return civ==='M.' ? 'Infirmier diplômé d’État' : 'Infirmière diplômée d’État'; }
+function afficherSignature(){
+  $('sigApercu').innerHTML = SIGNATURE ? '<img src="'+SIGNATURE+'" alt="Signature">' : '<span class="vide">Aucune signature enregistrée</span>';
+}
+function enregistrerSignature(dataUrl){
+  SIGNATURE = dataUrl || '';
+  let ok = true;
+  try{ if(SIGNATURE) localStorage.setItem(CLE_SIGN, SIGNATURE); else localStorage.removeItem(CLE_SIGN); }catch(e){ ok = false; }
+  afficherSignature();
+  if(!ok) alert('La signature n’a pas pu être enregistrée sur l’appareil (stockage plein ou navigation privée). Elle reste utilisable jusqu’à la fermeture de la page.');
+  planifier();
+}
+
+/* Recadre une signature sur son encre, éventuellement après avoir rendu le
+   fond clair transparent, et la réduit à 900 px de large au plus. */
+function nettoyerSignature(source, fondTransparent){
+  const c = document.createElement('canvas');
+  c.width = source.width; c.height = source.height;
+  const x = c.getContext('2d');
+  x.drawImage(source, 0, 0);
+  const img = x.getImageData(0, 0, c.width, c.height), d = img.data;
+  let minX=c.width, minY=c.height, maxX=-1, maxY=-1;
+  for(let y=0;y<c.height;y++) for(let i=0;i<c.width;i++){
+    const k = (y*c.width+i)*4;
+    if(fondTransparent){
+      const lum = 0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];
+      if(lum > 200) d[k+3] = 0;
+      else if(lum > 150) d[k+3] = Math.round(d[k+3]*(200-lum)/50);
+    }
+    if(d[k+3] > 24){ if(i<minX)minX=i; if(i>maxX)maxX=i; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  if(maxX < 0) return '';
+  x.putImageData(img, 0, 0);
+  const m = 6;
+  minX=Math.max(0,minX-m); minY=Math.max(0,minY-m); maxX=Math.min(c.width-1,maxX+m); maxY=Math.min(c.height-1,maxY+m);
+  const w = maxX-minX+1, h = maxY-minY+1, k = Math.min(1, 900/w);
+  const o = document.createElement('canvas');
+  o.width = Math.round(w*k); o.height = Math.round(h*k);
+  o.getContext('2d').drawImage(c, minX, minY, w, h, 0, 0, o.width, o.height);
+  return o.toDataURL('image/png');
+}
+function importerSignature(fichier){
+  if(!fichier) return;
+  const lecteur = new FileReader();
+  lecteur.onload = ()=>{
+    const im = new Image();
+    im.onload = ()=>{
+      const k = Math.min(1, 1800/Math.max(im.width, im.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(im.width*k); c.height = Math.round(im.height*k);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      const url = nettoyerSignature(c, $('sigBlanc').checked);
+      if(!url){ alert('Aucun tracé détecté sur cette image.'); return; }
+      enregistrerSignature(url);
+    };
+    im.onerror = ()=>alert('Image illisible.');
+    im.src = lecteur.result;
+  };
+  lecteur.readAsDataURL(fichier);
+}
+
+/* ---- tracé au doigt ---- */
+let padCtx = null, padTrace = false, padVide = true;
+function ouvrirPad(){
+  $('pad').classList.add('on');
+  const cv = $('padCanvas'), r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.height*dpr);
+  padCtx = cv.getContext('2d');
+  padCtx.scale(dpr, dpr);
+  padCtx.lineWidth = 2.4; padCtx.lineCap = 'round'; padCtx.lineJoin = 'round'; padCtx.strokeStyle = '#0b1f5c';
+  padVide = true;
+}
+function padPoint(e){ const r = $('padCanvas').getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; }
+$('padCanvas').addEventListener('pointerdown', e=>{
+  padTrace = true; padVide = false; $('padCanvas').setPointerCapture(e.pointerId);
+  const [x,y] = padPoint(e); padCtx.beginPath(); padCtx.moveTo(x,y); padCtx.lineTo(x+.1,y+.1); padCtx.stroke();
+});
+$('padCanvas').addEventListener('pointermove', e=>{ if(!padTrace) return; const [x,y] = padPoint(e); padCtx.lineTo(x,y); padCtx.stroke(); });
+['pointerup','pointercancel','pointerleave'].forEach(t=>$('padCanvas').addEventListener(t, ()=>{ padTrace = false; }));
+
+/* =====================================================================
+   RÉFÉRENTIELS — trames de rédaction, les « xx » restent à compléter
+   ===================================================================== */
+const PROD_MODELES = [
+  {groupe:"Pansements", items:[
+    ["Hydrocolloïde", "Pansement hydrocolloïde xx × xx cm, à renouveler tous les xx jours, pendant xx jours."],
+    ["Hydrocellulaire", "Pansement hydrocellulaire xx × xx cm, à renouveler tous les xx jours, pendant xx jours."],
+    ["Alginate", "Pansement alginate xx × xx cm (mèche ou compresse), à renouveler tous les xx jours, pendant xx jours."],
+    ["Hydrogel", "Hydrogel en tube de xx g, application sur la plaie à chaque réfection du pansement, pendant xx jours."],
+    ["Interface", "Pansement interface xx × xx cm, à renouveler tous les xx jours, pendant xx jours."],
+    ["Argent", "Pansement à l’argent xx × xx cm, à renouveler tous les xx jours, pendant xx jours."],
+    ["Compresses stériles", "Compresses stériles non tissées xx × xx cm : xx boîte(s)."],
+    ["Fixation", "Bande de fixation / film adhésif de maintien xx cm : xx unité(s)."]
+  ]},
+  {groupe:"Dispositifs médicaux", items:[
+    ["Compression", "Bas de compression médicale classe xx, taille xx, à porter la journée : xx paire(s)."],
+    ["Bandes de compression", "Bandes de compression xx cm × xx m : xx unité(s)."],
+    ["Aiguilles stylo", "Aiguilles pour stylo injecteur xx mm : xx boîte(s)."],
+    ["Lancettes / bandelettes", "Lancettes et bandelettes d’autosurveillance glycémique : xx boîte(s)."],
+    ["Collecteur DASRI", "Collecteur de déchets d’activités de soins à risques infectieux xx L : xx unité(s)."],
+    ["Poche de stomie", "Poches de stomie xx (une pièce / deux pièces), diamètre xx mm : xx boîte(s)."],
+    ["Sonde urinaire", "Sondes urinaires xx Ch : xx unité(s)."]
+  ]},
+  {groupe:"Sevrage tabagique", items:[
+    ["Patch nicotinique", "Substitut nicotinique, dispositif transdermique xx mg/24 h : un patch par jour pendant xx semaines."],
+    ["Forme orale", "Substitut nicotinique, gomme / pastille / comprimé xx mg : une unité en cas d’envie de fumer, xx unités par jour au maximum, pendant xx semaines."]
+  ]}
+];
+const VACC_MODELES = [
+  ["Grippe", "Vaccin contre la grippe saisonnière : une dose."],
+  ["Covid-19", "Vaccin contre la Covid-19 : une dose."],
+  ["dTcaPolio", "Vaccin diphtérie, tétanos, coqueluche, poliomyélite (dTcaPolio) : une dose de rappel."],
+  ["dTPolio", "Vaccin diphtérie, tétanos, poliomyélite (dTPolio) : une dose de rappel."],
+  ["Pneumocoque", "Vaccin contre le pneumocoque xx : une dose."],
+  ["Zona", "Vaccin contre le zona : xx dose(s)."],
+  ["HPV", "Vaccin contre les papillomavirus humains : une dose."],
+  ["Méningocoques", "Vaccin contre les méningocoques xx : une dose."],
+  ["VRS", "Vaccin contre le virus respiratoire syncytial : une dose."],
+  ["Hépatite B", "Vaccin contre l’hépatite B : une dose."]
+];
+const EXAMENS_BIO = [
+  "NFS, plaquettes","CRP","Ionogramme sanguin, créatinine avec estimation du DFG","Glycémie à jeun","HbA1c",
+  "INR","Albuminémie","Bilan hépatique : ASAT, ALAT, GGT, PAL, bilirubine","Ferritinémie","ECBU",
+  "Prélèvement bactériologique de plaie"
+];
+const PANSEMENTS_TYPES = ["hydrocolloïde","hydrocellulaire","alginate","hydrofibre","interface","à l’argent","au charbon","hydrogel","film adhésif transparent","compresses stériles"];
+
+const LETTRE_MODELES = [
+  {label:"Transmission au médecin traitant", corps:"Je prends en charge à domicile {IDENT} pour …\n\nÉvolution observée : …\n\nJe vous en informe et reste à votre disposition pour tout renseignement complémentaire."},
+  {label:"Demande de renouvellement", corps:"Les soins dispensés à {IDENT} arrivent à échéance le …\n\nL’état de {LE_PATIENT} justifie leur poursuite : …\n\nJe vous remercie de bien vouloir établir une nouvelle prescription si vous le jugez utile."},
+  {label:"Suivi de plaie", corps:"Je réalise les soins de plaie de {IDENT}.\n\nLocalisation : … — dimensions : … — aspect : …\n\nÉvolution depuis le … : …\n\nJe vous propose : …"},
+  {label:"Signalement d’une dégradation", corps:"Je souhaite porter à votre connaissance une modification de l’état de {IDENT}, constatée lors de mon passage du ….\n\nConstatations : …\n\nMesures prises : …\n\nJe vous remercie de bien vouloir réévaluer {LE_PATIENT}."},
+  {label:"Fin de prise en charge", corps:"Je vous informe de la fin de la prise en charge infirmière de {IDENT} à compter du ….\n\nMotif : …\n\nSynthèse des soins réalisés : …"},
+  {label:"Courrier administratif", corps:"Je vous prie de trouver ci-joint …\n\n…"}
+];
+const POLITESSES = [
+  "Je vous prie d’agréer, Madame, Monsieur, l’expression de mes salutations distinguées.",
+  "Je vous prie de croire, Docteur, à l’assurance de ma considération distinguée.",
+  "Bien confraternellement,",
+  "Bien cordialement,",
+  "Avec mes remerciements, bien cordialement,"
+];
+
+/* =====================================================================
+   LISTES (case à cocher + texte modifiable)
+   ===================================================================== */
+let UID = 0;
+const LISTES = {
+  prod:{cont:'prodList', items:[], ph:"produit, dimensions, quantité ou durée…"},
+  vacc:{cont:'vaccList', items:[], ph:"vaccin, nombre de doses…"},
+  bio: {cont:'bioList',  items:[], ph:"analyse"}
+};
+function ligneHtml(cle, item){
+  return '<div class="presc" data-uid="'+item.uid+'">'
+    + '<input type="checkbox" '+(item.coche?'checked':'')+' data-liste="'+cle+'" data-role="coche">'
+    + '<textarea id="tx'+item.uid+'" rows="1" placeholder="'+esc(LISTES[cle].ph)+'" data-liste="'+cle+'" data-role="txt">'+esc(item.txt)+'</textarea>'
+    + '<button type="button" class="mic" data-cible="tx'+item.uid+'">&#127897;</button></div>';
+}
+function rendreListe(cle){
+  const L = LISTES[cle];
+  $(L.cont).innerHTML = L.items.map(i=>ligneHtml(cle,i)).join('');
+  $(L.cont).querySelectorAll('textarea').forEach(autoGrow);
+}
+function ajouterLigne(cle, texte, coche, focus){
+  LISTES[cle].items.push({uid:++UID, coche:coche!==false, txt:texte||''});
+  rendreListe(cle);
+  const el = $(LISTES[cle].cont).querySelector('.presc:last-child textarea');
+  if(el && focus!==false){ el.focus(); const i = el.value.indexOf('xx'); try{ if(i>=0) el.setSelectionRange(i,i+2); else el.setSelectionRange(el.value.length, el.value.length); }catch(e){} }
+  planifier();
+}
+function cochees(cle){ return LISTES[cle].items.filter(i=>i.coche && i.txt.trim()).map(i=>i.txt.trim()); }
+function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+
+function composerPansement(){
+  const type = $('cpType').value, dim = val('cpDim'), loc = val('cpLoc'), freq = val('cpFreq'), duree = val('cpDuree'), qte = val('cpQte');
+  let l = (type==='compresses stériles' ? 'Compresses stériles' : 'Pansement '+type) + (dim?' '+dim:' xx × xx cm');
+  if(loc) l += ', pour la plaie '+(/^(du|de|des|d’|au|à)\b/i.test(loc)?'':'de ')+loc;
+  l += ', à renouveler tous les '+(freq||'xx')+' jours, pendant '+(duree||'xx')+' jours';
+  if(qte) l += ' — quantité : '+qte;
+  return l + '.';
+}
+
+/* =====================================================================
+   LECTURE DU FORMULAIRE
+   ===================================================================== */
+function readForm(){
+  const civ = $('civilite').value, f = (civ==='Mme');
+  const nom = formatNom(val('nom')), prenom = formatPrenom(val('prenom'));
+  const dateDoc = val('dateDoc') || todayFr();
+  const ddnIso = isoDepuisFr(val('ddn'));
+  const ide = {
+    civ:$('pCiv').value, f:$('pCiv').value==='Mme',
+    nom:formatNom(val('pNom')), prenom:formatPrenom(val('pPrenom')),
+    rpps:val('pRpps'), am:val('pAM'), qualite:val('pQualite') || qualiteDefaut($('pCiv').value),
+    adresse:lignesDe($('pAdresse').value), tel:val('pTel'), mail:val('pMail'), ville:val('pVille')
+  };
+  const r = {
+    actif:$('rActif').checked, civ:$('rCiv').value, f:$('rCiv').value==='Mme',
+    nom:formatNom(val('rNom')), prenom:formatPrenom(val('rPrenom')),
+    rpps:val('rRpps'), am:val('rAM'), adresse:lignesDe($('rAdresse').value), tel:val('rTel'), mail:val('rMail'),
+    debut:val('rDebut'), fin:val('rFin'), style:$('rStyle').value
+  };
+  return {
+    f, civ, e:f?'e':'', ne:f?'née':'né',
+    lePatient:f?'la patiente':'le patient',
+    identite:[civ, nom, prenom].filter(Boolean).join(' ') || '……',
+    nomPatient:nom, prenomPatient:prenom,
+    ddn: ddnIso ? val('ddn') : '', ddnSaisie:val('ddn'),
+    aage: ageAu(ddnIso, isoDepuisFr(dateDoc)),
+    sexe: f ? 'féminin' : 'masculin',
+    taille:val('taille'), poids:val('poids'),
+    dateDoc, ide, r,
+    sigImage:$('sigApposer').checked && !!SIGNATURE,
+    docs:{prod:$('d_prod').checked, vacc:$('d_vacc').checked, bio:$('d_bio').checked},
+    prod:cochees('prod'), prodRenouv:$('prodRenouv').value, prodMention:val('prodMention'),
+    vacc:cochees('vacc'), vaccAdmin:$('vaccAdmin').checked, vaccMention:val('vaccMention'),
+    bio:cochees('bio'), bioDomicile:$('bioDomicile').checked, bioJeun:$('bioJeun').checked, bioIndication:val('bioIndication'),
+    destinataire:$('destinataire').value||'', intro:$('intro').value, objet:val('objet'),
+    corps:$('lettreCorps').value||'', politesse:val('politesse')
+  };
+}
+function nomComplet(p){ return [p.prenom, p.nom].filter(Boolean).join(' '); }
+function remplacant(p){ return p.f ? 'remplaçante' : 'remplaçant'; }
+function infirmierDe(p){ return p.f ? 'infirmière' : 'infirmier'; }
+
+function identiteHtml(d){
+  let h = '<span class="pg-b">'+txt(d.identite)+'</span>';
+  if(d.ddn){ h += ', '+d.ne+' le '+txt(d.ddn); if(d.aage!==null) h += ' ('+d.aage+' ans)'; }
+  return h;
+}
+function identiteTexte(d){ return d.identite + (d.ddn ? ', '+d.ne+' le '+d.ddn : ''); }
+
+/* =====================================================================
+   BLOCS DE PAGE
+   ===================================================================== */
+function coordonnees(adresse, tel, mail){
+  return adresse.map(l=>'<p class="pg-small">'+txt(l)+'</p>').join('')
+    + ((tel||mail) ? '<p class="pg-small">'+txt([tel?'Tél. '+tel:'', mail].filter(Boolean).join(' — '))+'</p>' : '');
+}
+/* En-tête. Hors remplacement : identification de l'infirmier(ère).
+   En remplacement : le cabinet du titulaire, et l'auteur réel de la
+   prescription — le(la) remplaçant(e) — avec son propre RPPS. */
+function entete(d){
+  const p = d.ide, r = d.r;
+  let g = '', dr = '';
+  if(!r.actif){
+    g = '<p class="pg-nom">'+txt(nomComplet(p)||'……')+'</p>'
+      + '<p class="pg-qual">'+txt(p.qualite)+'</p>'
+      + '<p class="pg-small">RPPS '+txt(p.rpps||'……')+(p.am?' — N° AM '+txt(p.am):'')+'</p>';
+    dr = coordonnees(p.adresse, p.tel, p.mail);
+  } else if(r.style==='barre'){
+    g = '<p class="pg-nom"><span class="pg-barre">'+txt(nomComplet(r)||'……')+'</span></p>'
+      + '<p class="pg-nom">'+txt(nomComplet(p)||'……')+', '+txt(infirmierDe(p))+' '+txt(remplacant(p))+'</p>'
+      + '<p class="pg-qual">'+txt(p.qualite)+'</p>'
+      + '<p class="pg-small">RPPS '+txt(p.rpps||'……')+' (prescripteur)</p>'
+      + '<p class="pg-small">Titulaire : RPPS '+txt(r.rpps||'……')+(r.am?' — N° AM '+txt(r.am):'')+'</p>';
+    dr = coordonnees(r.adresse, r.tel, r.mail);
+  } else {
+    g = '<p class="pg-nom">'+txt(nomComplet(p)||'……')+'</p>'
+      + '<p class="pg-qual">'+txt(p.qualite)+' — '+txt(remplacant(p))+'</p>'
+      + '<p class="pg-small">RPPS '+txt(p.rpps||'……')+'</p>'
+      + '<div class="pg-rempl"><p><span class="t">'+txt('En remplacement de '+(r.f?'Mme ':'M. ')+(nomComplet(r)||'……'))+'</span>, '
+      + txt(r.f?'infirmière titulaire du cabinet':'infirmier titulaire du cabinet')+'</p>'
+      + '<p class="pg-small">RPPS '+txt(r.rpps||'……')+(r.am?' — N° AM '+txt(r.am):'')+'</p></div>';
+    dr = coordonnees(r.adresse, r.tel, r.mail);
+  }
+  if(r.actif && (r.debut||r.fin)) dr += '<p class="pg-small pg-i" style="margin-top:1.5mm">'+txt('Remplacement du '+(r.debut||'…')+' au '+(r.fin||'…'))+'</p>';
+  return '<div class="pg-head"><div class="g">'+g+'</div><div class="d">'+dr+'</div></div>';
+}
+function pied(d){
+  const a = d.r.actif ? d.r.adresse : d.ide.adresse;
+  const t = d.r.actif ? d.r.tel : d.ide.tel;
+  const l = a.concat(t?['Tél. '+t]:[]).join(' — ');
+  return '<div class="pg-foot">'+txt(l || ' ')+'</div>';
+}
+function blocSignature(d){
+  const p = d.ide, r = d.r;
+  const legende = r.actif
+    ? nomComplet(p)+', '+infirmierDe(p)+' '+remplacant(p)+' de '+(r.f?'Mme ':'M. ')+nomComplet(r)
+    : nomComplet(p);
+  return '<div class="pg-sigbloc">'
+    + '<p class="lab">Signature</p>'
+    + (d.sigImage ? '<img src="'+SIGNATURE+'" alt="">' : '<div class="espace"></div>')
+    + '<p>'+txt(legende||'……')+'</p></div>';
+}
+
+function page(contenu, d){
+  return '<div class="page">'+entete(d)+'<div class="pg-body">'+contenu+'</div>'+pied(d)+'</div>';
+}
+
+/* =====================================================================
+   MESURE ET PAGINATION
+   ===================================================================== */
+const MM = (function(){
+  const p = document.createElement('div');
+  p.style.cssText = 'position:absolute;height:100mm;visibility:hidden';
+  document.body.appendChild(p);
+  const v = p.offsetHeight/100; p.remove(); return v;
+})();
+function mesurer(html){ const m = $('measure'); m.innerHTML = html; const h = m.offsetHeight; m.innerHTML = ''; return h; }
+function hauteurUtile(d){
+  /* page 296,6 mm − marges 12 + 10 mm − en-tête − pied */
+  const m = $('measure');
+  m.innerHTML = page('', d);
+  const pg = m.querySelector('.page');
+  const h = pg.querySelector('.pg-body').getBoundingClientRect().height;
+  m.innerHTML = '';
+  return h - 1;
+}
+function paginer(tete, blocs, basDePage, d){
+  const H = hauteurUtile(d);
+  const hPied = mesurer(basDePage), suite = '<p class="pg-suite">…/…</p>', hSuite = mesurer(suite);
+  if(!blocs.length) blocs = [''];
+  const pages = []; let cur = [], head = tete;
+  for(let i=0;i<blocs.length;i++){
+    const dernier = (i===blocs.length-1);
+    const h = mesurer(head + cur.concat([blocs[i]]).join('')) + (dernier?hPied:hSuite);
+    if(h > H && cur.length){ pages.push(head + cur.join('') + suite); cur = [blocs[i]]; head = ''; }
+    else cur.push(blocs[i]);
+  }
+  let derniere = head + cur.join('');
+  if(mesurer(derniere) + hPied > H && cur.length){ pages.push(derniere + suite); derniere = ''; }
+  pages.push(derniere + basDePage);
+  return pages.map(p=>page(p, d));
+}
+
+/* =====================================================================
+   LES DOCUMENTS
+   ===================================================================== */
+function enteteOrdo(d, sousTitre){
+  const ville = d.r.actif ? '' : d.ide.ville;
+  let h = '<p class="pg-date">'+txt((ville?ville+', le ':'Le ')+d.dateDoc)+'</p>'
+    + '<p class="pg-title">ORDONNANCE</p>'
+    + '<p class="pg-soustitre">'+txt('Prescription infirmière'+(sousTitre?' — '+sousTitre:''))+'</p>'
+    + '<p class="pg-ident">'+identiteHtml(d)+'</p>'
+    + '<p class="pg-line">'+txt('Sexe : '+d.sexe + (d.taille?' — Taille : '+d.taille:'') + (d.poids?' — Poids : '+d.poids:''))+'</p>';
+  return h + '<hr class="pg-rule">';
+}
+function piedOrdo(d){ return '<div class="pg-sig">'+blocSignature(d)+'</div>'; }
+const tiret = l => '<p class="pg-tiret">- '+txt(l)+'</p>';
+
+function docProd(d){
+  const blocs = (d.prod.length?d.prod:['……']).map(tiret);
+  if(d.prodRenouv) blocs.push('<p class="pg-para">'+txt(d.prodRenouv)+'</p>');
+  if(d.prodMention) blocs.push('<p class="pg-para">'+txt(d.prodMention)+'</p>');
+  return paginer(enteteOrdo(d, 'produits de santé')+'<div style="height:3mm"></div>', blocs, piedOrdo(d), d);
+}
+function docVacc(d){
+  const blocs = (d.vacc.length?d.vacc:['……']).map(tiret);
+  if(d.vaccAdmin) blocs.push('<p class="pg-para">'+txt('Vaccin administré par l’'+infirmierDe(d.ide)+'.')+'</p>');
+  if(d.vaccMention) blocs.push('<p class="pg-para">'+txt(d.vaccMention)+'</p>');
+  return paginer(enteteOrdo(d, 'vaccination')+'<div style="height:3mm"></div>', blocs, piedOrdo(d), d);
+}
+function docBio(d){
+  const tete = enteteOrdo(d, 'examens de biologie')
+    + '<p class="pg-para first">'+txt('Faire pratiquer par un laboratoire de biologie médicale'+(d.bioDomicile?', au domicile du patient':'')+(d.bioJeun?', à jeun':'')+' :')+'</p>';
+  const blocs = (d.bio.length?d.bio:['……']).map(tiret);
+  if(d.bioIndication) blocs.push('<p class="pg-para">'+txt(d.bioIndication)+'</p>');
+  return paginer(tete, blocs, piedOrdo(d), d);
+}
+function docLettre(d){
+  const ville = d.r.actif ? '' : d.ide.ville;
+  const tete = '<p class="pg-date">'+txt((ville?ville+', le ':'Le ')+d.dateDoc)+'</p>'
+    + '<p class="pg-dest">'+txt(d.destinataire.trim() || '……')+'</p>'
+    + (d.objet?'<p class="pg-objet"><span class="pg-b">Objet :</span> '+txt(d.objet)+'</p>':'')
+    + '<p class="pg-intro">'+txt(d.intro)+'</p>';
+  const blocs = []; let premier = true;
+  d.corps.split(/\n/).forEach(l=>{ const t = l.trim(); if(!t) return;
+    blocs.push('<p class="pg-para'+(premier?' first':'')+'">'+txt(t)+'</p>'); premier = false; });
+  if(!blocs.length) blocs.push('<p class="pg-para first">……</p>');
+  if(d.politesse) blocs.push('<p class="pg-para">'+txt(d.politesse)+'</p>');
+  return paginer(tete, blocs, '<div class="pg-sig">'+blocSignature(d)+'</div>', d);
+}
+
+/* =====================================================================
+   CONTRÔLE DES MENTIONS
+   Mentions de l'ordonnance : art. R.5132-3 du code de la santé publique
+   (prescripteur : nom, qualité, identifiant, adresse, coordonnées,
+   signature, date ; patient : nom, prénoms, sexe, âge, taille et poids
+   si nécessaire).
+   ===================================================================== */
+function controler(d){
+  const manque = [], alertes = [];
+  const p = d.ide, r = d.r;
+  if(!p.nom || !p.prenom) manque.push('vos nom et prénom');
+  if(etatRpps(p.rpps)==='vide') manque.push('votre numéro RPPS');
+  if(!p.qualite) manque.push('votre qualité');
+  const adr = r.actif ? r.adresse : p.adresse;
+  if(!adr.length) manque.push(r.actif ? 'l’adresse du cabinet du titulaire' : 'votre adresse professionnelle');
+  if(!(r.actif ? (r.tel||r.mail) : (p.tel||p.mail))) manque.push('un téléphone ou un courriel professionnel');
+  if(!d.sigImage) alertes.push('Aucune signature apposée : signez le document imprimé à la main.');
+  if(r.actif){
+    if(!r.nom || !r.prenom) manque.push('les nom et prénom du titulaire remplacé');
+    if(etatRpps(r.rpps)==='vide') manque.push('le RPPS du titulaire remplacé');
+    const di = isoDepuisFr(r.debut), fi = isoDepuisFr(r.fin), doc = isoDepuisFr(d.dateDoc);
+    if(!di || !fi) manque.push('les dates du remplacement');
+    else if(doc && (doc < di || doc > fi)) alertes.push('La date du document ('+d.dateDoc+') est en dehors de la période de remplacement : vous ne pouvez pas prescrire au titre de ce remplacement à cette date.');
+    if(di && fi && fi < di) alertes.push('La fin du remplacement précède son début.');
+  }
+  if(MODE==='ordo'){
+    if(!d.nomPatient || !d.prenomPatient) manque.push('les nom et prénom du patient');
+    if(!d.ddn) manque.push('la date de naissance du patient (l’âge est une mention obligatoire)');
+    const n = (d.docs.prod?d.prod.length:0)+(d.docs.vacc?d.vacc.length:0)+(d.docs.bio?d.bio.length:0);
+    if(!n) manque.push('au moins une ligne de prescription cochée');
+    const lignes = [].concat(d.docs.prod?d.prod:[], d.docs.vacc?d.vacc:[], d.docs.bio?d.bio:[]);
+    if(lignes.some(l=>/\bxx\b/.test(l))) alertes.push('Des « xx » restent à compléter dans les lignes cochées.');
+  }
+  const m1 = messageRpps(p.rpps, 'saisi'), m2 = r.actif ? messageRpps(r.rpps, 'du titulaire') : '';
+  if(m1) alertes.push(m1); if(m2) alertes.push(m2);
+
+  const box = $('conformite');
+  if(!manque.length && !alertes.length){
+    box.className = 'hint bon';
+    box.textContent = 'Toutes les mentions contrôlées sont présentes. Relisez le contenu clinique avant de signer.';
+    return;
+  }
+  box.className = 'hint alerte';
+  box.innerHTML = (manque.length ? '<b>Mentions manquantes :</b><ul>'+manque.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>' : '')
+    + (alertes.length ? '<b>À vérifier :</b><ul>'+alertes.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>' : '');
+}
+
+/* =====================================================================
+   RENDU
+   ===================================================================== */
+let MODE = 'ordo';
+function render(){
+  const d = readForm();
+  $('fsProd').classList.toggle('off', !d.docs.prod);
+  $('fsVacc').classList.toggle('off', !d.docs.vacc);
+  $('fsBio').classList.toggle('off', !d.docs.bio);
+  $('rBox').classList.toggle('off', !d.r.actif);
+  $('noteDdn').style.display = (d.ddnSaisie && !d.ddn) ? '' : 'none';
+  [['pRpps','noteRpps','saisi'],['rRpps','noteRRpps','du titulaire']].forEach(([c,n,q])=>{
+    const m = messageRpps(val(c), q); $(n).textContent = m; $(n).style.display = m ? '' : 'none';
+  });
+  $('profilResume').textContent = d.ide.nom
+    ? nomComplet(d.ide)+' — RPPS '+(d.ide.rpps||'non renseigné')+(SIGNATURE?' — signature enregistrée':' — pas de signature')
+    : 'Renseignez votre identité : elle est conservée sur cet appareil.';
+
+  let pages = [];
+  const pousser = (liste, nom) => liste.forEach((p,i)=>pages.push({html:p, nom:nom+(liste.length>1?' ('+(i+1)+'/'+liste.length+')':'')}));
+  if(MODE==='ordo'){
+    if(d.docs.prod) pousser(docProd(d), 'Ordonnance — produits de santé');
+    if(d.docs.vacc) pousser(docVacc(d), 'Ordonnance — vaccination');
+    if(d.docs.bio)  pousser(docBio(d), 'Ordonnance — biologie');
+  } else pousser(docLettre(d), 'Courrier');
+
+  $('preview').innerHTML = pages.map((p,i)=>'<div class="pagebox"><div class="pagelabel">Page '+(i+1)+' / '+pages.length+' — '+esc(p.nom)+'</div>'
+    + '<div class="pagewrap">'+p.html+'</div></div>').join('');
+  $('cptPages').textContent = pages.length ? pages.length+' page'+(pages.length>1?'s':'') : 'aucune page';
+  controler(d);
+  ajusterZoom();
+  signalerDebordement();
+}
+function ajusterZoom(){
+  const dispo = $('previewPane').clientWidth - 20;
+  if(dispo <= 0) return;
+  const z = Math.min(1, dispo/(210*MM));
+  document.querySelectorAll('.pagebox').forEach(box=>{
+    const w = box.querySelector('.pagewrap'); if(!w) return;
+    w.style.transform = 'scale('+z+')'; w.style.width = (210*MM)+'px';
+    box.style.width = (210*MM*z)+'px'; box.style.height = (296.6*MM*z + 22)+'px';
+  });
+}
+function signalerDebordement(){
+  document.querySelectorAll('.pagebox').forEach(box=>{
+    const b = box.querySelector('.pg-body');
+    if(b && b.scrollHeight > b.clientHeight + 2){
+      const av = document.createElement('div'); av.className = 'debord';
+      av.textContent = '⚠ Le contenu déborde de la page — raccourcir le texte';
+      box.insertBefore(av, box.firstChild.nextSibling);
+    }
+  });
+}
+let minuteur = null;
+function planifier(){ clearTimeout(minuteur); minuteur = setTimeout(render, 180); }
+
+/* =====================================================================
+   PDF
+   ===================================================================== */
+function nettoyerNomFichier(t){
+  return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+}
+function nomFichierPdf(){
+  const iso = isoDepuisFr(val('dateDoc')) || isoDepuisFr(todayFr());
+  const nom = nettoyerNomFichier(val('nom')).toUpperCase();
+  const pre = nettoyerNomFichier(val('prenom')).toLowerCase().replace(/(^|-)([a-z])/g,(m,s,c)=>s+c.toUpperCase());
+  return [iso.replace(/-/g,''), MODE==='lettre'?'courrier':'ordonnance-IDE', nom, pre].filter(Boolean).join('_');
+}
+const TITRE_APP = document.title;
+function restaurerTitre(){ if(document.title !== TITRE_APP) document.title = TITRE_APP; }
+window.addEventListener('beforeprint', ()=>{ document.title = nomFichierPdf(); });
+let dernierPdf = null;
+function chargerScript(src){
+  return new Promise((ok, ko)=>{
+    if(document.querySelector('script[data-src="'+src+'"]')) return ok();
+    const sc = document.createElement('script'); sc.src = src; sc.dataset.src = src;
+    sc.onload = ()=>ok(); sc.onerror = ()=>ko(new Error('Chargement impossible : '+src));
+    document.head.appendChild(sc);
+  });
+}
+function remplacerImages(racine){
+  racine.querySelectorAll('img').forEach(img=>{
+    const r = img.getBoundingClientRect(), cs = getComputedStyle(img), div = document.createElement('div');
+    div.style.cssText = 'display:block;margin:'+cs.margin+';width:'+r.width+'px;height:'+r.height+'px;background:url("'+img.src+'") center/contain no-repeat';
+    img.replaceWith(div);
+  });
+}
+async function fabriquerPdf(){
+  clearTimeout(minuteur); render();
+  await Promise.all([chargerScript('./lib/html2canvas.min.js'), chargerScript('./lib/jspdf.umd.min.js')]);
+  if(document.fonts && document.fonts.ready) await document.fonts.ready;
+  const pages = Array.from(document.querySelectorAll('#preview .page'));
+  if(!pages.length) throw new Error('Aucune page à enregistrer.');
+  const hote = document.createElement('div');
+  hote.style.cssText = 'position:fixed;left:-20000px;top:0;width:'+(210*MM)+'px;background:#fff;pointer-events:none';
+  document.body.appendChild(hote);
+  const pdf = new window.jspdf.jsPDF({unit:'mm', format:'a4', orientation:'portrait', compress:true});
+  try{
+    for(let i=0;i<pages.length;i++){
+      $('dialEtat').textContent = 'Création du PDF… page '+(i+1)+' / '+pages.length;
+      const clone = pages[i].cloneNode(true); clone.style.boxShadow = 'none';
+      hote.appendChild(clone); remplacerImages(clone);
+      const canvas = await html2canvas(clone, {scale:3, backgroundColor:'#ffffff', logging:false});
+      if(i) pdf.addPage('a4','portrait');
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 296.6, undefined, 'FAST');
+      canvas.width = canvas.height = 0; clone.remove();
+    }
+  } finally { hote.remove(); }
+  pdf.setProperties({title:nomFichierPdf(), creator:'LeSacAOrdo IDE — © 2026 LESACA Julien'});
+  return pdf.output('blob');
+}
+function telecharger(blob, nom){
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nom; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+}
+function peutPartager(blob, nom){
+  try{ return !!(navigator.canShare && navigator.canShare({files:[new File([blob], nom, {type:'application/pdf'})]})); }catch(e){ return false; }
+}
+async function enregistrerPdf(){
+  const btn = $('dialPdf'); btn.disabled = true; $('dialPartageBloc').style.display = 'none';
+  try{
+    const nom = nomFichierPdf()+'.pdf', blob = await fabriquerPdf();
+    dernierPdf = {blob, nom}; telecharger(blob, nom);
+    $('dialEtat').textContent = 'PDF enregistré dans Téléchargements : '+nom;
+    if(peutPartager(blob, nom)) $('dialPartageBloc').style.display = '';
+  }catch(e){
+    $('dialEtat').textContent = 'Échec de la création du PDF ('+(e && e.message || e)+'). Utilisez « Imprimer » ci-dessous.';
+    $('dialImpr').open = true;
+  }finally{ btn.disabled = false; }
+}
+async function partagerPdf(){
+  if(!dernierPdf) return;
+  try{ await navigator.share({files:[new File([dernierPdf.blob], dernierPdf.nom, {type:'application/pdf'})], title:dernierPdf.nom}); }catch(e){}
+}
+
+/* =====================================================================
+   DICTÉE VOCALE
+   ===================================================================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recBtn = null, recBase = '', recActif = false, recDernier = 0;
+const PONCTUATION = [
+  [/\bpoint d’interrogation\b/gi,'?'],[/\bpoint d’exclamation\b/gi,'!'],[/\bpoint[- ]virgule\b/gi,' ;'],
+  [/\bdeux[- ]points\b/gi,' :'],[/\b(?:à la ligne|nouvelle ligne|retour à la ligne)\b/gi,'\n'],[/\bnouveau paragraphe\b/gi,'\n\n'],
+  [/\bvirgule\b/gi,','],[/\bpoint\b/gi,'.'],[/\bouvrez? la parenthèse\b/gi,' ('],[/\bfermez? la parenthèse\b/gi,')'],[/\btiret\b/gi,'-']
+];
+function nettoyer(s){
+  let t = ' '+s+' '; PONCTUATION.forEach(p=>{ t = t.replace(p[0], p[1]); });
+  return t.replace(/\s+([,.;:!?])/g,'$1').replace(/[ \t]{2,}/g,' ').replace(/\n[ \t]+/g,'\n').trim();
+}
+function stopDictee(){ recActif = false; if(rec){ try{ rec.stop(); }catch(e){} } if(recBtn) recBtn.classList.remove('on'); rec = null; recBtn = null; }
+function demarrerDictee(btn, el){
+  if(!SR){ etatMicro('indispo'); return; }
+  if(recBtn===btn){ stopDictee(); return; }
+  stopDictee();
+  recBtn = btn; recActif = true; recBase = el.value ? el.value.replace(/\s+$/,'')+' ' : '';
+  btn.classList.add('on');
+  rec = new SR(); rec.lang = 'fr-FR'; rec.continuous = true; rec.interimResults = true;
+  rec.onresult = e=>{
+    let fin = '', inter = '';
+    for(let i=e.resultIndex;i<e.results.length;i++){ const t = e.results[i][0].transcript; if(e.results[i].isFinal) fin += t; else inter += t; }
+    if(fin) recBase = (recBase + nettoyer(fin) + ' ').replace(/\n /g,'\n');
+    el.value = recBase + inter; autoGrow(el); el.dispatchEvent(new Event('input',{bubbles:true}));
+  };
+  rec.onerror = e=>{
+    if(e.error==='not-allowed' || e.error==='service-not-allowed'){ etatMicro('refus'); stopDictee(); }
+    else if(e.error==='network'){ etatMicro('reseau'); stopDictee(); }
+  };
+  rec.onend = ()=>{ if(!recActif) return; const t = Date.now(); if(t-recDernier<400){ stopDictee(); return; } recDernier = t; try{ rec.start(); }catch(err){ stopDictee(); } };
+  try{ rec.start(); }catch(err){ etatMicro('refus'); stopDictee(); }
+}
+function etatMicro(cas){
+  const p = $('micEtat');
+  const secours = " À défaut, le micro du clavier (Gboard) fonctionne dans tous les champs, y compris hors connexion.";
+  p.className = cas==='ok' ? 'hint' : 'hint alerte';
+  if(cas==='indispo') p.textContent = "La dictée intégrée n'est pas disponible dans ce navigateur."+secours;
+  else if(cas==='refus') p.textContent = "Accès au microphone refusé ou impossible ici."+secours;
+  else if(cas==='reseau') p.textContent = "La dictée intégrée de Chrome passe par un serveur distant : elle ne fonctionne pas hors connexion."+secours;
+  else p.textContent = SR ? "Appuyez sur 🎙 à côté d'un champ pour dicter ; dites « virgule », « point », « à la ligne »… Appuyez de nouveau pour arrêter." : "La dictée intégrée n'est pas disponible dans ce navigateur."+secours;
+}
+
+/* =====================================================================
+   APPLICATION INSTALLABLE (PWA)
+   ===================================================================== */
+let promptInstall = null, swAttente = null;
+function autonome(){
+  return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: minimal-ui)').matches || navigator.standalone === true;
+}
+function etatApp(cas){
+  const p = $('appEtat'); p.className = 'hint';
+  if(cas==='installee') return p.textContent = "Application installée : elle fonctionne ensuite sans connexion.";
+  if(autonome()) return p.textContent = "Application lancée en mode autonome ; elle fonctionne hors connexion.";
+  if(location.protocol==='file:'){ p.className='hint alerte'; return p.textContent = "Fichier ouvert en local : l'installation exige une adresse https (voir README)."; }
+  if(promptInstall) return p.textContent = "Prête à être installée : appuyez sur le bouton ci-dessous.";
+  p.textContent = "Si le bouton d'installation n'apparaît pas : menu du navigateur (⋮) → « Installer l'application » ou « Ajouter à l'écran d'accueil ».";
+}
+addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); promptInstall = e; $('btnInstall').style.display = 'block'; etatApp(); });
+addEventListener('appinstalled', ()=>{ promptInstall = null; $('btnInstall').style.display = 'none'; etatApp('installee'); });
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').then(reg=>{
+      if(reg.waiting){ swAttente = reg.waiting; $('maj').classList.add('on'); }
+      reg.addEventListener('updatefound', ()=>{
+        const n = reg.installing; if(!n) return;
+        n.addEventListener('statechange', ()=>{ if(n.state==='installed' && navigator.serviceWorker.controller){ swAttente = n; $('maj').classList.add('on'); } });
+      });
+    }).catch(()=>{});
+    let recharge = false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(recharge) return; recharge = true; location.reload(); });
+  });
+}
+if('caches' in window){
+  caches.keys().then(k=>{ const v = k.filter(n=>/^lesacaordoide-v\d+$/.test(n)).sort().pop(); if(v) $('versionApp').textContent = ' — version '+v.replace('lesacaordoide-',''); }).catch(()=>{});
+}
+
+/* =====================================================================
+   CONSTRUCTION DU FORMULAIRE ET ÉVÉNEMENTS
+   ===================================================================== */
+function buildForm(){
+  $('prodModeles').innerHTML = PROD_MODELES.map((g,gi)=>'<p class="chipsTitre">'+esc(g.groupe)+'</p><div class="chips">'
+    + g.items.map((m,i)=>'<button type="button" data-prod="'+gi+'.'+i+'">'+esc(m[0])+'</button>').join('')+'</div>').join('');
+  $('vaccModeles').innerHTML = VACC_MODELES.map((m,i)=>'<button type="button" data-vacc="'+i+'">'+esc(m[0])+'</button>').join('');
+  $('lettreModeles').innerHTML = LETTRE_MODELES.map((m,i)=>'<button type="button" data-lettre="'+i+'">'+esc(m.label)+'</button>').join('');
+  $('cpType').innerHTML = PANSEMENTS_TYPES.map(t=>'<option>'+esc(t)+'</option>').join('');
+  $('politesseChoix').innerHTML = POLITESSES.map(t=>'<option>'+esc(t)+'</option>').join('') + '<option value="">— personnalisée —</option>';
+  $('politesse').value = POLITESSES[0];
+  reinitListes();
+  $('dateDoc').value = todayFr(); $('dateDocPick').value = isoDepuisFr(todayFr());
+}
+function reinitListes(){
+  LISTES.prod.items = []; LISTES.vacc.items = [];
+  LISTES.bio.items = EXAMENS_BIO.map(t=>({uid:++UID, coche:false, txt:t}));
+  rendreListe('bio'); rendreListe('vacc');
+  ajouterLigne('prod','',true,false);
+}
+function basculer(mode){
+  MODE = mode;
+  document.body.classList.toggle('mode-ordo', mode==='ordo');
+  document.body.classList.toggle('mode-lettre', mode==='lettre');
+  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
+  try{ localStorage.setItem('lesacaordoide-mode', mode); }catch(e){}
+  planifier();
+}
+function insererDansChamp(el, texte){
+  const p = el.selectionStart;
+  if(typeof p==='number' && el===document.activeElement){
+    el.value = el.value.slice(0,p)+texte+el.value.slice(el.selectionEnd); el.setSelectionRange(p+texte.length, p+texte.length);
+  } else el.value = (el.value ? el.value.replace(/\s+$/,'')+' ' : '')+texte;
+  el.focus(); autoGrow(el); planifier();
+}
+
+document.addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  if(b.dataset.mode){ basculer(b.dataset.mode); return; }
+  if(b.classList.contains('mic')){ const el = $(b.dataset.cible); if(el) demarrerDictee(b, el); return; }
+  if(b.dataset.prod){ const [g,i] = b.dataset.prod.split('.').map(Number); ajouterLigne('prod', PROD_MODELES[g].items[i][1], true); return; }
+  if(b.dataset.vacc!==undefined){ ajouterLigne('vacc', VACC_MODELES[+b.dataset.vacc][1], true); return; }
+  if(b.dataset.lettre!==undefined){
+    const d = readForm(), m = LETTRE_MODELES[+b.dataset.lettre];
+    if($('lettreCorps').value.trim() && !confirm('Remplacer le texte déjà saisi ?')) return;
+    $('lettreCorps').value = m.corps.replace(/\{IDENT\}/g, identiteTexte(d)).replace(/\{LE_PATIENT\}/g, d.lePatient);
+    autoGrow($('lettreCorps')); planifier(); return;
+  }
+  switch(b.id){
+    case 'addProd': ajouterLigne('prod','',true); break;
+    case 'addVacc': ajouterLigne('vacc','',true); break;
+    case 'addBio':  ajouterLigne('bio','',true); break;
+    case 'cpAjouter':
+      ajouterLigne('prod', composerPansement(), true);
+      ['cpDim','cpLoc','cpFreq','cpDuree','cpQte'].forEach(id=>$(id).value='');
+      break;
+    case 'insererIdent': insererDansChamp($('lettreCorps'), identiteTexte(readForm())); break;
+    case 'sigDessiner': ouvrirPad(); break;
+    case 'sigImporter': $('sigFichier').value = ''; $('sigFichier').click(); break;
+    case 'sigSuppr': if(SIGNATURE && confirm('Supprimer la signature enregistrée sur cet appareil ?')) enregistrerSignature(''); break;
+    case 'padEffacer': ouvrirPad(); break;
+    case 'padAnnuler': $('pad').classList.remove('on'); break;
+    case 'padValider': {
+      if(padVide){ alert('Signez dans le cadre avant d’enregistrer.'); break; }
+      const url = nettoyerSignature($('padCanvas'), false);
+      $('pad').classList.remove('on');
+      if(url) enregistrerSignature(url);
+      break;
+    }
+    case 'profilEffacer':
+      if(!confirm('Effacer de cet appareil votre identité, votre signature et les données de remplacement ?')) break;
+      try{ [CLE_PROFIL, CLE_SIGN, CLE_REMPL].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+      CHAMPS_PROFIL.concat(CHAMPS_REMPL).forEach(id=>{ const el = $(id); if(el.tagName==='SELECT') el.selectedIndex = 0; else el.value = ''; });
+      ['rDebutPick','rFinPick'].forEach(id=>$(id).value='');
+      $('rActif').checked = false; SIGNATURE = ''; afficherSignature();
+      $('pQualite').value = qualiteDefaut($('pCiv').value);
+      planifier(); break;
+    case 'btnVue':
+      document.body.classList.toggle('vue-apercu');
+      b.firstChild.textContent = document.body.classList.contains('vue-apercu') ? 'Formulaire' : 'Aperçu';
+      ajusterZoom(); scrollTo(0,0); break;
+    case 'btnPdf':
+      document.title = nomFichierPdf();
+      $('dialNom').textContent = nomFichierPdf()+'.pdf'; $('dialEtat').textContent = '';
+      $('dialPartageBloc').style.display = 'none'; $('dial').classList.add('on'); break;
+    case 'dialPdf': enregistrerPdf(); break;
+    case 'dialPartager': partagerPdf(); break;
+    case 'dialAnnuler': $('dial').classList.remove('on'); break;
+    case 'dialOk': $('dial').classList.remove('on'); stopDictee(); clearTimeout(minuteur); render(); document.title = nomFichierPdf(); setTimeout(()=>print(), 120); break;
+    case 'btnInstall':
+      if(promptInstall){ promptInstall.prompt(); promptInstall.userChoice.finally(()=>{ promptInstall = null; $('btnInstall').style.display='none'; etatApp(); }); }
+      break;
+    case 'btnMaj': if(swAttente) swAttente.postMessage({type:'SKIP_WAITING'}); else location.reload(); break;
+    case 'btnReset':
+      restaurerTitre();
+      if(!confirm('Effacer le patient et le contenu saisi ? Votre profil, votre signature et le remplacement sont conservés.')) return;
+      ['nom','prenom','ddn','ddnPick','taille','poids','prodMention','vaccMention','bioIndication','destinataire','objet','lettreCorps'].forEach(id=>$(id).value='');
+      $('prodRenouv').value = '';
+      reinitListes();
+      $('dateDoc').value = todayFr(); $('dateDocPick').value = isoDepuisFr(todayFr());
+      planifier(); break;
+  }
+});
+
+const CHAMPS_DATE = {ddn:'ddnPick', dateDoc:'dateDocPick', rDebut:'rDebutPick', rFin:'rFinPick'};
+function appliquerFormat(champ, fn){
+  const v = fn(champ.value); if(v===champ.value) return;
+  const a = champ.selectionStart, z = champ.selectionEnd; champ.value = v;
+  if(a!==null && document.activeElement===champ) champ.setSelectionRange(a, z);
+}
+document.addEventListener('input', ev=>{
+  const t = ev.target;
+  restaurerTitre();
+  if(['nom','pNom','rNom'].includes(t.id)) appliquerFormat(t, formatNom);
+  if(['prenom','pPrenom','rPrenom'].includes(t.id)) appliquerFormat(t, formatPrenom);
+  if(['pRpps','rRpps','pAM','rAM'].includes(t.id)) appliquerFormat(t, v=>v.replace(/\D/g,''));
+  if(CHAMPS_DATE[t.id]){ masquerDate(t); const p = $(CHAMPS_DATE[t.id]); if(p) p.value = isoDepuisFr(t.value); }
+  if(t.dataset && t.dataset.liste && t.dataset.role==='txt'){
+    const it = LISTES[t.dataset.liste].items.find(i=>i.uid===+t.closest('.presc').dataset.uid);
+    if(it) it.txt = t.value;
+  }
+  if(t.tagName==='TEXTAREA') autoGrow(t);
+  if(t.id==='politesse') $('politesseChoix').value = POLITESSES.includes(t.value) ? t.value : '';
+  if(CHAMPS_PROFIL.includes(t.id) || CHAMPS_REMPL.includes(t.id)) sauverProfil();
+  planifier();
+});
+document.addEventListener('change', ev=>{
+  const t = ev.target;
+  if(/Pick$/.test(t.id)){ const c = $(t.id.replace('Pick','')); if(c && t.value) c.value = frDepuisIso(t.value); }
+  if(t.dataset && t.dataset.liste && t.dataset.role==='coche'){
+    const it = LISTES[t.dataset.liste].items.find(i=>i.uid===+t.closest('.presc').dataset.uid);
+    if(it) it.coche = t.checked;
+  }
+  if(t.id==='pCiv'){
+    const q = val('pQualite');
+    if(!q || q===qualiteDefaut('Mme') || q===qualiteDefaut('M.')) $('pQualite').value = qualiteDefaut(t.value);
+  }
+  if(t.id==='politesseChoix' && t.value) $('politesse').value = t.value;
+  if(t.id==='sigFichier') importerSignature(t.files && t.files[0]);
+  if(CHAMPS_PROFIL.includes(t.id) || CHAMPS_REMPL.includes(t.id) || /^r(Debut|Fin)Pick$/.test(t.id) || ['rActif','sigApposer'].includes(t.id)) sauverProfil();
+  planifier();
+});
+addEventListener('resize', ajusterZoom);
+
+/* =====================================================================
+   DÉMARRAGE
+   ===================================================================== */
+buildForm();
+chargerProfil();
+let modeInitial = 'ordo';
+try{ modeInitial = localStorage.getItem('lesacaordoide-mode') || 'ordo'; }catch(e){}
+try{ const dem = new URLSearchParams(location.search).get('mode'); if(dem==='ordo' || dem==='lettre') modeInitial = dem; }catch(e){}
+basculer(modeInitial === 'lettre' ? 'lettre' : 'ordo');
+etatMicro('ok');
+etatApp();
+render();
+document.querySelectorAll('textarea').forEach(autoGrow);
+</script>
+</body>
+</html>
